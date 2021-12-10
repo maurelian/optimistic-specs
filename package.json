@@ -5,12 +5,41 @@
   "private": true,
   "devDependencies": {
     "lint-staged": "11.0.0",
-    "markdownlint": "^0.24.0",
-    "markdownlint-cli2": "^0.3.2"
+    "remark-cli": "^10.0.1",
+    "remark-gfm": "^3.0.1",
+    "remark-lint": "^9.1.1",
+    "remark-lint-list-item-spacing": "^4.1.1",
+    "remark-lint-maximum-line-length": "^3.1.2",
+    "remark-lint-no-long-code": "^0.1.3",
+    "remark-preset-lint-consistent": "^5.1.1",
+    "remark-preset-lint-recommended": "^6.1.2",
+    "remark-toc": "^8.0.1"
   },
   "scripts": {
-    "lint": "yarn lint:fix && yarn lint:check",
-    "lint:fix": "markdownlint-cli2-fix \"**/*.md\" \"#node_modules\"",
-    "lint:check": "markdownlint-cli2 \"**/*.md\" \"#node_modules\""
+    "format": "remark . --quiet --frail --output",
+    "check": "remark . --quiet --frail"
+  },
+  "remarkConfig": {
+    "settings": {
+      "bullet": "-"
+    },
+    "plugins": [
+      "remark-preset-lint-consistent",
+      "remark-preset-lint-recommended",
+      "remark-toc",
+      "remark-lint-list-item-spacing",
+      [
+        "remark-lint-no-blockquote-without-marker",
+        "false"
+      ],
+      [
+        "remark-lint-maximum-line-length",
+        "100"
+      ],
+      [
+        "remark-lint-no-long-code",
+        "false"
+      ]
+    ]
   }
 }

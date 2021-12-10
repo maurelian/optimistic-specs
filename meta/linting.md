@@ -2,12 +2,12 @@
 
 See
 
-- [markdownlint rule reference](https://github.com/DavidAnson/markdownlint/blob/main/doc/Rules.md)
-- [exemple .markdownlint.json file](https://github.com/DavidAnson/markdownlint/blob/main/schema/.markdownlint.jsonc)
+-   [remark-lint rules](https://github.com/remarkjs/remark-lint#rules)
+-   [remark-lint config](https://github.com/remarkjs/remark-lint#configure) is handled in package.json
 
-Justification for linting rules in [.markdownlint.json](/.markdownlint.json):
+## Justification for linting rules in \[./package.json]:
 
-- *line_length* (`!strict && stern`): don't trip up on url lines
-- *no-blanks-blockquote*: enable multiple consecutive blockquotes separated by white lines
-- *single-title*: enable reusing `<h1>` for content
-- *no-emphasis-as-heading*: enable emphasized paragraphs
+For now we will just try the basic defaults with these packages:
+
+-   https://github.com/remarkjs/remark-lint/tree/main/packages/remark-preset-lint-recommended
+-   https://github.com/remarkjs/remark-lint/tree/main/packages/remark-preset-lint-consistent
