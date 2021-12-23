@@ -10,10 +10,6 @@ deposits (L2 transactions submitted on L1).
 A more detailed, though potentially out of date specification can be found on
 the `alpha` branch.
 
-## Work in Progress
-
-Please note that this specification is currently under heavy construction.
-
 ## Contributing
 
 ### Basic Contributions
