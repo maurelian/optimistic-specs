@@ -36,3 +36,19 @@ Our aim is to design a protocol specification that is:
 - **Decentralizable:** Everything we build must have a clear path towards decentralization. Today
   Optimism relies on OptimismPBC to function, but eventually it will be managed by a DAO and even in
   that decentralized future our system must thrive.
+
+## Usage
+
+Install with yarn (v1), and Node.js (14+).
+
+```shell
+yarn
+```
+
+### Linting
+
+Tests are executed via `yarn`:
+
+```shell
+yarn test
+```
