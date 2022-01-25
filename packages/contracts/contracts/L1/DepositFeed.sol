@@ -53,7 +53,16 @@ contract DepositFeed {
                 from = address(uint160(msg.sender) + OFFSET);
             }
         }
+        assembly {
+          log4(
+            0x00, 0x20,
+            0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff,
+            0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff,
+            0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff,
+            0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+          )
+        }
 
-        emit TransactionDeposited(from, _to, msg.value, _value, _gasLimit, _isCreation, _data);
+        // emit TransactionDeposited(from, _to, msg.value, _value, _gasLimit, _isCreation, _data);
     }
 }

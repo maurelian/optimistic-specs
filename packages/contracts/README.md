@@ -15,3 +15,5 @@ Tests are executed via `yarn`:
 ```shell
 yarn test
 ```
+
+### Deposit Feed encoding notes
