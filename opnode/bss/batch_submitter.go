@@ -6,6 +6,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/ethereum-optimism/optimistic-specs/opnode/bss/drivers/l2output"
 	"github.com/ethereum-optimism/optimistic-specs/opnode/bss/txmgr"
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/common"
@@ -58,7 +59,8 @@ func Main(gitVersion string) func(ctx *cli.Context) error {
 // BatchSubmitter is a service that configures the necessary resources for
 // running the TxBatchSubmitter and StateBatchSubmitter sub-services.
 type BatchSubmitter struct {
-	ctx context.Context
+	ctx             context.Context
+	l2OutputService *Service
 }
 
 // NewBatchSubmitter initializes the BatchSubmitter, gathering any resources
@@ -83,7 +85,7 @@ func NewBatchSubmitter(cfg Config, gitVersion string) (*BatchSubmitter, error) {
 		return nil, err
 	}
 
-	_, err = wallet.PrivateKey(accounts.Account{
+	l2OutputPrivKey, err := wallet.PrivateKey(accounts.Account{
 		URL: accounts.URL{
 			Path: cfg.L2OutputHDPath,
 		},
@@ -92,7 +94,7 @@ func NewBatchSubmitter(cfg Config, gitVersion string) (*BatchSubmitter, error) {
 		return nil, err
 	}
 
-	_, err = parseAddress(cfg.SROAddress)
+	sroAddress, err := parseAddress(cfg.SROAddress)
 	if err != nil {
 		return nil, err
 	}
@@ -104,32 +106,54 @@ func NewBatchSubmitter(cfg Config, gitVersion string) (*BatchSubmitter, error) {
 		return nil, err
 	}
 
-	_, err = dialL1EthClientWithTimeout(ctx, cfg.L2EthRpc)
+	l2Client, err := dialL1EthClientWithTimeout(ctx, cfg.L2EthRpc)
 	if err != nil {
 		return nil, err
 	}
 
-	_, err = l1Client.ChainID(ctx)
+	chainID, err := l1Client.ChainID(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	_ = txmgr.Config{
+	txManagerConfig := txmgr.Config{
 		ResubmissionTimeout:  cfg.ResubmissionTimeout,
 		ReceiptQueryInterval: time.Second,
 		NumConfirmations:     cfg.NumConfirmations,
 	}
 
+	l2OutputDriver, err := l2output.NewDriver(l2output.Config{
+		Name:     "L2Output",
+		L1Client: l1Client,
+		L2Client: l2Client,
+		SROAddr:  sroAddress,
+		ChainID:  chainID,
+		PrivKey:  l2OutputPrivKey,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	l2OutputService := NewService(ServiceConfig{
+		Context:         ctx,
+		Driver:          l2OutputDriver,
+		PollInterval:    cfg.PollInterval,
+		L1Client:        l1Client,
+		TxManagerConfig: txManagerConfig,
+	})
+
 	return &BatchSubmitter{
-		ctx: ctx,
+		ctx:             ctx,
+		l2OutputService: l2OutputService,
 	}, nil
 }
 
 func (b *BatchSubmitter) Start() error {
-	return nil
+	return b.l2OutputService.Start()
 }
 
 func (b *BatchSubmitter) Stop() {
+	_ = b.l2OutputService.Stop()
 }
 
 // dialL1EthClientWithTimeout attempts to dial the L1 provider using the

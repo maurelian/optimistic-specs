@@ -88,6 +88,7 @@ var requiredFlags = []cli.Flag{
 	L1EthRpcFlag,
 	L2EthRpcFlag,
 	SROAddressFlag,
+	SROAddressFlag,
 	MaxBatchSubmissionTimeFlag,
 	PollIntervalFlag,
 	NumConfirmationsFlag,
