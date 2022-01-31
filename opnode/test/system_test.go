@@ -7,14 +7,19 @@ import (
 	"testing"
 	"time"
 
+	"github.com/ethereum-optimism/optimistic-specs/bss"
+	"github.com/ethereum-optimism/optimistic-specs/bss/bindings/sro"
+	"github.com/ethereum-optimism/optimistic-specs/bss/txmgr"
 	"github.com/ethereum-optimism/optimistic-specs/opnode/contracts/deposit"
 	rollupNode "github.com/ethereum-optimism/optimistic-specs/opnode/node"
 	"github.com/stretchr/testify/require"
 
+	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/accounts/keystore"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/eth/ethconfig"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/node"
@@ -37,6 +42,8 @@ func endpoint(cfg *node.Config) string {
 // TestSystemE2E sets up a L1 Geth node, a rollup node, and a L2 geth node and then confirms that L1 deposits are reflected on L2.
 // All nodes are run in process (but are the full nodes, not mocked or stubbed).
 func TestSystemE2E(t *testing.T) {
+	const l2OutputHDPath = "m/44'/60'/0'/0/3"
+
 	// System Config
 	cfg := &systemConfig{
 		mnemonic: "squirrel green gallery layer logic title habit chase clog actress language enrich body plate fun pledge gap abuse mansion define either blast alien witness",
@@ -66,6 +73,7 @@ func TestSystemE2E(t *testing.T) {
 			"m/44'/60'/0'/0/0": 10000000,
 			"m/44'/60'/0'/0/1": 10000000,
 			"m/44'/60'/0'/0/2": 10000000,
+			l2OutputHDPath:     10000000,
 		},
 		cliqueSigners:           []string{"m/44'/60'/0'/0/0"},
 		depositContractAddress:  "0xdeaddeaddeaddeaddeaddeaddeaddeaddead0001",
@@ -120,6 +128,55 @@ func TestSystemE2E(t *testing.T) {
 	require.Nil(t, err)
 	defer node.Close()
 
+	// Deploy StateRootOracle
+	l2OutputPrivKey, err := cfg.wallet.PrivateKey(accounts.Account{
+		URL: accounts.URL{
+			Path: l2OutputHDPath,
+		},
+	})
+	require.Nil(t, err)
+	l2OutputAddr := crypto.PubkeyToAddress(l2OutputPrivKey.PublicKey)
+
+	nonce, err := l1Client.NonceAt(context.TODO(), l2OutputAddr, nil)
+	require.Nil(t, err)
+
+	opts, err := bind.NewKeyedTransactorWithChainID(
+		l2OutputPrivKey, cfg.l1.ethConfig.Genesis.Config.ChainID,
+	)
+	require.Nil(t, err)
+	opts.Nonce = big.NewInt(int64(nonce))
+
+	submissionFrequency := big.NewInt(10) // 10 seconds
+	l2BlockTime := big.NewInt(2)          // 2 seconds
+	sroAddr, tx, stateRootOracle, err := sro.DeployStateRootOracle(
+		opts, l1Client, submissionFrequency, l2BlockTime, [32]byte{}, big.NewInt(0),
+	)
+	require.Nil(t, err)
+
+	_, err = txmgr.WaitMined(context.TODO(), l1Client, tx, time.Second, 1)
+	require.Nil(t, err)
+
+	initialSroTimestamp, err := stateRootOracle.LatestBlockTimestamp(&bind.CallOpts{})
+	require.Nil(t, err)
+
+	// Batch submitter
+	batchSubmitter, err := bss.NewBatchSubmitter(bss.Config{
+		L1EthRpc:            endpoint(cfg.l1.nodeConfig),
+		L2EthRpc:            endpoint(cfg.l2.nodeConfig),
+		SROAddress:          sroAddr.String(),
+		PollInterval:        5 * time.Second,
+		NumConfirmations:    1,
+		ResubmissionTimeout: 5 * time.Second,
+		LogLevel:            "debug",
+		Mnemonic:            cfg.mnemonic,
+		L2OutputHDPath:      l2OutputHDPath,
+	}, "")
+	require.Nil(t, err)
+
+	err = batchSubmitter.Start()
+	require.Nil(t, err)
+	defer batchSubmitter.Stop()
+
 	// Send Transaction & wait for success
 	contractAddr := common.HexToAddress(cfg.depositContractAddress)
 	fromAddr := common.HexToAddress("0x30ec912c5b1d14aa6d1cb9aa7a6682415c4f7eb0")
@@ -136,7 +193,7 @@ func TestSystemE2E(t *testing.T) {
 
 	// Signer
 	ks := l1Node.AccountManager().Backends(keystore.KeyStoreType)[0].(*keystore.KeyStore)
-	opts, err := bind.NewKeyStoreTransactorWithChainID(ks, ks.Accounts()[0], big.NewInt(int64(cfg.l1.ethConfig.NetworkId)))
+	opts, err = bind.NewKeyStoreTransactorWithChainID(ks, ks.Accounts()[0], big.NewInt(int64(cfg.l1.ethConfig.NetworkId)))
 	require.Nil(t, err)
 
 	// Setup for L1 Confirmation
@@ -153,7 +210,7 @@ func TestSystemE2E(t *testing.T) {
 
 	// Finally send TX
 	mintAmount := big.NewInt(1_000_000_000_000)
-	tx, err := depositContract.DepositTransaction(opts, fromAddr, mintAmount, big.NewInt(1_000_000), false, nil)
+	tx, err = depositContract.DepositTransaction(opts, fromAddr, mintAmount, big.NewInt(1_000_000), false, nil)
 	require.Nil(t, err, "with deposit tx")
 
 	// Wait for tx to be mined on L1 (or timeout)
@@ -198,4 +255,38 @@ loop:
 	diff := new(big.Int)
 	diff = diff.Sub(endBalance, startBalance)
 	require.Equal(t, diff, mintAmount, "Did not get expected balance change")
+
+	// Wait for batch submitter to update state root oracle.
+	timeoutCh = time.After(15 * time.Second)
+	for {
+		sroTimestamp, err := stateRootOracle.LatestBlockTimestamp(&bind.CallOpts{})
+		require.Nil(t, err)
+
+		// Wait for the state root oracle to have been changed from the initial
+		// timestamp set in the contract constructor.
+		if sroTimestamp.Cmp(initialSroTimestamp) > 0 {
+			// Retrieve the state root committed at this updated timestamp.
+			committedStateRoot, err := stateRootOracle.StateRoots(&bind.CallOpts{}, sroTimestamp)
+			require.Nil(t, err)
+
+			// Compute the committed state root's L2 block number.
+			sroBlockNumber, err := stateRootOracle.ComputeL2BlockNumber(
+				&bind.CallOpts{}, sroTimestamp,
+			)
+			require.Nil(t, err)
+
+			// Fetch the corresponding L2 block and assert the committed state
+			// root matches the block's state root.
+			l2Block, err := l2Client.BlockByNumber(context.TODO(), sroBlockNumber)
+			require.Nil(t, err)
+			require.Equal(t, l2Block.Root(), common.Hash(committedStateRoot))
+			break
+		}
+
+		select {
+		case <-timeoutCh:
+			t.Fatalf("State root oracle not updated")
+		case <-time.After(time.Second):
+		}
+	}
 }
