@@ -6,7 +6,7 @@ import (
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/urfave/cli"
 
-	"github.com/ethereum-optimism/optimistic-specs/opnode/bss/flags"
+	"github.com/ethereum-optimism/optimistic-specs/bss/flags"
 )
 
 type Config struct {

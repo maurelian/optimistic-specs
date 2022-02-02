@@ -7,7 +7,7 @@ import (
 	"math/big"
 	"strings"
 
-	"github.com/ethereum-optimism/optimistic-specs/opnode/bss/bindings/sro"
+	"github.com/ethereum-optimism/optimistic-specs/bss/bindings/sro"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"

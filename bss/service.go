@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ethereum-optimism/optimistic-specs/opnode/bss/txmgr"
+	"github.com/ethereum-optimism/optimistic-specs/bss/txmgr"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"

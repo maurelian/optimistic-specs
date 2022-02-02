@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/ethereum-optimism/optimistic-specs/opnode/bss"
+	"github.com/ethereum-optimism/optimistic-specs/bss"
 	"github.com/stretchr/testify/require"
 )
 

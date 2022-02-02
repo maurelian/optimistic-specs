@@ -6,8 +6,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/ethereum-optimism/optimistic-specs/opnode/bss/drivers/l2output"
-	"github.com/ethereum-optimism/optimistic-specs/opnode/bss/txmgr"
+	"github.com/ethereum-optimism/optimistic-specs/bss/drivers/l2output"
+	"github.com/ethereum-optimism/optimistic-specs/bss/txmgr"
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
