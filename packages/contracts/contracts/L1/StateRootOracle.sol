@@ -6,57 +6,58 @@ pragma solidity >0.5.0 <0.9.0;
 // state root proposals, but until we have a full dispute
 // game spec that we are happy with, it is better to KEEP IT SIMPLE.
 contract StateRootOracle {
-    uint public submissionFrequency;
-    uint public l2BlockTime;
-    mapping(uint=>bytes32) public stateRoots;
-    uint public latestBlockTimestamp;
-    uint public startingBlockTimestamp;
+    uint256 public submissionFrequency;
+    uint256 public l2BlockTime;
+    mapping(uint256 => bytes32) public stateRoots;
+    uint256 public latestBlockTimestamp;
+    uint256 public startingBlockTimestamp;
     uint256 public historicalTotalBlocks;
 
     /**********
      * Events *
      **********/
 
-    event StateRootAppended(
-        uint indexed _timestamp,
-        bytes32 _stateRoot
-    );
+    event StateRootAppended(uint256 indexed _timestamp, bytes32 _stateRoot);
 
-    event StateRootDeleted(uint indexed _timestamp, bytes32 _stateRoot);
+    event StateRootDeleted(uint256 indexed _timestamp, bytes32 _stateRoot);
 
-    
     constructor(
-	uint _submissionFrequency,
-	uint _l2BlockTime,
+        uint256 _submissionFrequency,
+        uint256 _l2BlockTime,
         bytes32 _genesisRoot,
-	uint256 _historicalTotalBlocks
+        uint256 _historicalTotalBlocks
     ) {
-	require(_submissionFrequency > 0, "submission frequency must be positive");
-	require(_l2BlockTime > 0, "l2BlockTime must be positive");
+        require(_submissionFrequency > 0, "submission frequency must be positive");
+        require(_l2BlockTime > 0, "l2BlockTime must be positive");
 
-	submissionFrequency = _submissionFrequency;
-	l2BlockTime = _l2BlockTime;
+        submissionFrequency = _submissionFrequency;
+        l2BlockTime = _l2BlockTime;
         stateRoots[block.timestamp] = _genesisRoot;
         latestBlockTimestamp = block.timestamp;
         startingBlockTimestamp = block.timestamp;
-	historicalTotalBlocks = _historicalTotalBlocks;
+        historicalTotalBlocks = _historicalTotalBlocks;
     }
 
-    function appendStateRoot(bytes32 _stateRoot, uint _timestamp) external
-{
-        require(block.timestamp > _timestamp, "Cannot append state roots from the future. Come on bruh.");
+    function appendStateRoot(bytes32 _stateRoot, uint256 _timestamp) external {
+        require(
+            block.timestamp > _timestamp,
+            "Cannot append state roots from the future. Come on bruh."
+        );
         require(_stateRoot != bytes32(0), "Cannot submit empty state root");
-        require(_timestamp == latestBlockTimestamp + submissionFrequency, "Must submit state root for every 25 minutes");
+        require(
+            _timestamp == latestBlockTimestamp + submissionFrequency,
+            "Must submit state root for every 25 minutes"
+        );
         stateRoots[_timestamp] = _stateRoot;
-	latestBlockTimestamp = _timestamp;
+        latestBlockTimestamp = _timestamp;
         emit StateRootAppended(_timestamp, _stateRoot);
     }
 
-    function getTotalSubmittedStateRoots() public view returns(uint256) {
+    function getTotalSubmittedStateRoots() public view returns (uint256) {
         return (latestBlockTimestamp - startingBlockTimestamp) / submissionFrequency;
     }
 
-    function deleteStateBatch(uint _timestamp) external {
+    function deleteStateBatch(uint256 _timestamp) external {
         uint256 _nextTimestamp = _timestamp + submissionFrequency;
         require(stateRoots[_nextTimestamp] == bytes32(0), "Must delete tip state root.");
         bytes32 _oldStateRoot = stateRoots[_timestamp];
@@ -65,11 +66,16 @@ contract StateRootOracle {
         return;
     }
 
-    function verifyStateCommitment(
-        // bytes32 _element,
-        // bytes32 _stateRoot,
-        // bytes memory _proof
-    ) external pure returns (bool _verified) {
+    function verifyStateCommitment()
+        external
+        pure
+        returns (
+            // bytes32 _element,
+            // bytes32 _stateRoot,
+            // bytes memory _proof
+            bool _verified
+        )
+    {
         // TODO -- Merkle proof
         // TODO -- Decide if we want to put the withdrawals closer to the root
         // of the
@@ -77,23 +83,20 @@ contract StateRootOracle {
         return false;
     }
 
-    function insideFraudProofWindow(uint256 _timestamp)
-        external
-	view
-        returns (bool _inside) {
-            require(stateRoots[_timestamp] != bytes32(0), "State root not submitted yet.");
-            // if stateRoots[_blockNumber].timestamp is 1 week old) {
-            //     return true
-            // }
-            return false;
-        }
+    function insideFraudProofWindow(uint256 _timestamp) external view returns (bool _inside) {
+        require(stateRoots[_timestamp] != bytes32(0), "State root not submitted yet.");
+        // if stateRoots[_blockNumber].timestamp is 1 week old) {
+        //     return true
+        // }
+        return false;
+    }
 
-    function nextTimestamp() external view returns (uint) {
+    function nextTimestamp() external view returns (uint256) {
         return latestBlockTimestamp + submissionFrequency;
     }
 
-    function computeL2BlockNumber(uint _timestamp) external view returns (uint) {
-	require(_timestamp >= startingBlockTimestamp, "timestamp before start");
-        return historicalTotalBlocks + (_timestamp-startingBlockTimestamp)/l2BlockTime;
+    function computeL2BlockNumber(uint256 _timestamp) external view returns (uint256) {
+        require(_timestamp >= startingBlockTimestamp, "timestamp before start");
+        return historicalTotalBlocks + (_timestamp - startingBlockTimestamp) / l2BlockTime;
     }
 }
