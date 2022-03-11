@@ -7,6 +7,6 @@ coverage.out
 
 # built binaries
 bin
-#
+
 # vim swap files
 *.sw*
