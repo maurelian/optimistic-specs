@@ -25,6 +25,7 @@
   - [Depositor](#depositor)
   - [Deposited Transaction Type](#deposited-transaction-type)
   - [Deposit Contract](#deposit-contract)
+- [Withdrawals](#withdrawals)
 - [Other L2 Chain Concepts](#other-l2-chain-concepts)
   - [Address Aliasing](#address-aliasing)
   - [L2 Chain Inception](#l2-chain-inception)
@@ -255,6 +256,15 @@ is part of the *internal* execution between contracts, and this intermediate cal
 [Merkle Patricia Trie roots][mpt] included in the L1 block.
 
 cf. [Deposits Specification](deposits.md)
+
+------------------------------------------------------------------------------------------------------------------------
+
+# Withdrawals
+
+## With
+
+> ***TODO:**
+
 
 ------------------------------------------------------------------------------------------------------------------------
 

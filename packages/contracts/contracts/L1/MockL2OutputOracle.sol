@@ -1,10 +1,12 @@
 //SPDX-License-Identifier: MIT
 pragma solidity >=0.8.10;
 
+import 'hardhat/console.sol';
+
 /**
- * @title MockL2OutputOracle
+ * @title L2OutputOracle
  */
-contract MockL2OutputOracle {
+contract L2OutputOracle {
     uint256 public submissionFrequency;
     uint256 public l2BlockTime;
     mapping(uint256 => bytes32) public l2Outputs;
@@ -13,7 +15,7 @@ contract MockL2OutputOracle {
     uint256 public startingBlockTimestamp;
 
     /**
-     * Initialize the MockL2OutputOracle contract.
+     * Initialize the L2OutputOracle contract.
      * @param _submissionFrequency The desired interval in seconds at which
      *        checkpoints must be submitted.
      * @param _l2BlockTime The desired L2 inter-block time in seconds.
