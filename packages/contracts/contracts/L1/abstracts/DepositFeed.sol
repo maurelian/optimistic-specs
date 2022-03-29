@@ -31,10 +31,7 @@ abstract contract DepositFeed {
     event TransactionDeposited(
         address indexed from,
         address indexed to,
-        uint256 mint,
-        uint256 value,
-        uint256 gasLimit,
-        bool isCreation,
+        bytes32 encodedArgs,
         bytes data
     );
 
@@ -53,8 +50,8 @@ abstract contract DepositFeed {
      */
     function depositTransaction(
         address _to,
-        uint256 _value,
-        uint256 _gasLimit,
+        uint96 _value,
+        uint16 _gasLimit,
         bool _isCreation,
         bytes memory _data
     ) public payable {
@@ -68,6 +65,15 @@ abstract contract DepositFeed {
             from = AddressAliasHelper.applyL1ToL2Alias(msg.sender);
         }
 
-        emit TransactionDeposited(from, _to, msg.value, _value, _gasLimit, _isCreation, _data);
+        // Efficiently encode these args into a single bytes32 word.
+        bytes32 encodedArgs = bytes32(
+            abi.encodePacked(
+                uint96(msg.value),
+                _value,
+                _gasLimit,
+                _isCreation
+            )
+        );
+        emit TransactionDeposited(from, _to, encodedArgs, _data);
     }
 }

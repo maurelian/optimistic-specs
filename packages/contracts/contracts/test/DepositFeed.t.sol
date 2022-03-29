@@ -19,9 +19,9 @@ contract DepositFeedTest is DSTest {
     Vm vm = Vm(HEVM_ADDRESS);
     address immutable ZERO_ADDRESS = address(0);
     address immutable NON_ZERO_ADDRESS = address(1);
-    uint256 immutable NON_ZERO_VALUE = 100;
-    uint256 immutable ZERO_VALUE = 0;
-    uint256 immutable NON_ZERO_GASLIMIT = 50000;
+    uint96 immutable NON_ZERO_VALUE = 100;
+    uint96 immutable ZERO_VALUE = 0;
+    uint16 immutable NON_ZERO_GASLIMIT = 50000;
     bytes NON_ZERO_DATA = hex"1111";
 
     Target df;
@@ -29,10 +29,7 @@ contract DepositFeedTest is DSTest {
     event TransactionDeposited(
         address indexed from,
         address indexed to,
-        uint256 mint,
-        uint256 value,
-        uint256 gasLimit,
-        bool isCreation,
+        bytes32 encodedArgs,
         bytes data
     );
 
@@ -54,10 +51,14 @@ contract DepositFeedTest is DSTest {
         emit TransactionDeposited(
             address(this),
             NON_ZERO_ADDRESS,
-            ZERO_VALUE,
-            ZERO_VALUE,
-            NON_ZERO_GASLIMIT,
-            false,
+            bytes32(
+                abi.encodePacked(
+                    ZERO_VALUE,
+                    ZERO_VALUE,
+                    NON_ZERO_GASLIMIT,
+                    false
+                )
+            ),
             NON_ZERO_DATA
         );
 
@@ -76,19 +77,34 @@ contract DepositFeedTest is DSTest {
         emit TransactionDeposited(
             AddressAliasHelper.applyL1ToL2Alias(address(this)),
             NON_ZERO_ADDRESS,
-            ZERO_VALUE,
-            ZERO_VALUE,
-            NON_ZERO_GASLIMIT,
-            false,
+            bytes32(
+                abi.encodePacked(
+                    ZERO_VALUE,
+                    ZERO_VALUE,
+                    NON_ZERO_GASLIMIT,
+                    false
+                )
+            ),
             NON_ZERO_DATA
         );
-
         df.depositTransaction(
             NON_ZERO_ADDRESS,
             ZERO_VALUE,
             NON_ZERO_GASLIMIT,
             false,
             NON_ZERO_DATA
+        );
+    }
+
+    function test_bridgeDataDeposit() external {
+        // Standard bridge deposit transactions use 420 bytes of data
+        bytes memory someData = hex"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
+        df.depositTransaction(
+            NON_ZERO_ADDRESS,
+            ZERO_VALUE,
+            NON_ZERO_GASLIMIT,
+            false,
+            someData
         );
     }
 
@@ -101,10 +117,14 @@ contract DepositFeedTest is DSTest {
         emit TransactionDeposited(
             address(this),
             ZERO_ADDRESS,
-            ZERO_VALUE,
-            ZERO_VALUE,
-            NON_ZERO_GASLIMIT,
-            true,
+            bytes32(
+                abi.encodePacked(
+                    ZERO_VALUE,
+                    ZERO_VALUE,
+                    NON_ZERO_GASLIMIT,
+                    true
+                )
+            ),
             NON_ZERO_DATA
         );
 
@@ -117,10 +137,14 @@ contract DepositFeedTest is DSTest {
         emit TransactionDeposited(
             AddressAliasHelper.applyL1ToL2Alias(address(this)),
             ZERO_ADDRESS,
-            ZERO_VALUE,
-            ZERO_VALUE,
-            NON_ZERO_GASLIMIT,
-            true,
+            bytes32(
+                abi.encodePacked(
+                    ZERO_VALUE,
+                    ZERO_VALUE,
+                    NON_ZERO_GASLIMIT,
+                    true
+                )
+            ),
             NON_ZERO_DATA
         );
 
@@ -136,10 +160,14 @@ contract DepositFeedTest is DSTest {
         emit TransactionDeposited(
             address(this),
             NON_ZERO_ADDRESS,
-            NON_ZERO_VALUE,
-            ZERO_VALUE,
-            NON_ZERO_GASLIMIT,
-            false,
+            bytes32(
+                abi.encodePacked(
+                    NON_ZERO_VALUE,
+                    ZERO_VALUE,
+                    NON_ZERO_GASLIMIT,
+                    false
+                )
+            ),
             NON_ZERO_DATA
         );
 
@@ -159,10 +187,14 @@ contract DepositFeedTest is DSTest {
         emit TransactionDeposited(
             AddressAliasHelper.applyL1ToL2Alias(address(this)),
             NON_ZERO_ADDRESS,
-            NON_ZERO_VALUE,
-            ZERO_VALUE,
-            NON_ZERO_GASLIMIT,
-            false,
+            bytes32(
+                abi.encodePacked(
+                    NON_ZERO_VALUE,
+                    ZERO_VALUE,
+                    NON_ZERO_GASLIMIT,
+                    false
+                )
+            ),
             NON_ZERO_DATA
         );
 
@@ -184,10 +216,14 @@ contract DepositFeedTest is DSTest {
         emit TransactionDeposited(
             address(this),
             ZERO_ADDRESS,
-            NON_ZERO_VALUE,
-            ZERO_VALUE,
-            NON_ZERO_GASLIMIT,
-            true,
+            bytes32(
+                abi.encodePacked(
+                    NON_ZERO_VALUE,
+                    ZERO_VALUE,
+                    NON_ZERO_GASLIMIT,
+                    true
+                )
+            ),
             hex""
         );
 
@@ -207,10 +243,14 @@ contract DepositFeedTest is DSTest {
         emit TransactionDeposited(
             AddressAliasHelper.applyL1ToL2Alias(address(this)),
             ZERO_ADDRESS,
-            NON_ZERO_VALUE,
-            ZERO_VALUE,
-            NON_ZERO_GASLIMIT,
-            true,
+            bytes32(
+                abi.encodePacked(
+                    NON_ZERO_VALUE,
+                    ZERO_VALUE,
+                    NON_ZERO_GASLIMIT,
+                    true
+                )
+            ),
             NON_ZERO_DATA
         );
 

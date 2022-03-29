@@ -15,10 +15,7 @@ contract OptimismPortal_Test is DSTest {
     event TransactionDeposited(
         address indexed from,
         address indexed to,
-        uint256 mint,
-        uint256 value,
-        uint256 gasLimit,
-        bool isCreation,
+        bytes32 encodedArgs,
         bytes data
     );
 
@@ -41,7 +38,19 @@ contract OptimismPortal_Test is DSTest {
         vm.prank(address(this), address(this));
 
         vm.expectEmit(true, true, false, true);
-        emit TransactionDeposited(address(this), address(this), 100, 100, 30_000, false, hex"");
+        emit TransactionDeposited(
+            address(this),
+            address(this),
+            bytes32(
+                abi.encodePacked(
+                    uint96(100),
+                    uint96(100),
+                    uint16(30_000),
+                    false
+                )
+            ),
+            hex""
+        );
 
         (bool s, ) = address(op).call{ value: 100 }(hex"");
         s; // Silence the compiler's "Return value of low-level calls not used" warning.
