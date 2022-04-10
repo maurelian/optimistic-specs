@@ -105,22 +105,59 @@ describe('Withdrawals', () => {
       portal = portal.connect(recipient)
       const oracle = new Contract(
         await portal.L2_ORACLE(),
-        l2OOracleArtifact.abi,
-      ).connect(recipient)
+        l2OOracleArtifact.abi
+      ).connect(recipient);
 
-      const storageSlot = '00'.repeat(31) + '01' // i.e the second variable declared in the contract
-      const latestBlock = await env.l2Provider.getBlock('latest')
-      const proof = await env.l2Provider.send('eth_getProof', [
+      // await new Promise((resolve) => setTimeout(resolve, 30000));
+
+      let targetOutputTimestamp: number;
+      if (
+        (await oracle.getL2Output(burnBlock.timestamp)) ==
+        "0x" + "00".repeat(32)
+      ) {
+        await awaitCondition(
+          async () => {
+            const nextTimestamp = await oracle.nextTimestamp();
+            console.log("Burnblock timestamp is:", burnBlock.timestamp);
+            console.log(
+              "nextTimestamp to append is:",
+              nextTimestamp.toNumber()
+            );
+            console.log(
+              "difference:",
+              burnBlock.timestamp - nextTimestamp.toNumber()
+            );
+
+            const bal = await recipient.getBalance();
+
+            // update this number on each iteration. When the condition is met, this will be the
+            // timestamp we want to prove against.
+            targetOutputTimestamp = nextTimestamp;
+            return nextTimestamp.toNumber() > burnBlock.timestamp;
+          },
+          2000,
+          100
+        );
+      }
+
+      const storageSlot = "00".repeat(31) + "01"; // i.e the second variable declared in the contract
+      const proof = await env.l2Provider.send("eth_getProof", [
         WITHDRAWER_ADDR,
         [utils.keccak256(withdrawalHash + storageSlot)],
-        'latest',
-      ])
+        BigNumber.from(targetOutputTimestamp)
+          .toHexString()
+          .replace("0x0", "0x"),
+      ]);
 
-      await new Promise((resolve) => setTimeout(resolve, 30000))
-
-      console.log(await oracle.queryFilter(oracle.filters.l2OutputAppended(), 1, 'latest'))
-      console.log(burnBlock.number, burnBlock.timestamp, proof.storageHash)
-      console.log(await oracle.getL2Output(burnBlock.timestamp))
+      const { targetStateRoot, targetHash } = await env.l2Provider.send(
+        "eth_getBlockByNumber",
+        [
+          BigNumber.from(targetOutputTimestamp)
+            .toHexString()
+            .replace("0x0", "0x"),
+          false,
+        ]
+      );
 
       const tx = await portal.finalizeWithdrawalTransaction(
         nonce,
@@ -129,12 +166,12 @@ describe('Withdrawals', () => {
         utils.parseEther('1'),
         '3000000',
         '0x',
-        burnBlock.timestamp,
+        targetOutputTimestamp,
         {
           version: constants.HashZero,
-          stateRoot: constants.HashZero,
+          stateRoot: targetStateRoot,
           withdrawerStorageRoot: proof.storageHash,
-          latestBlockhash: latestBlock.hash,
+          latestBlockhash: targetHash,
         },
         rlp.encode(proof.storageProof[0].proof),
         {

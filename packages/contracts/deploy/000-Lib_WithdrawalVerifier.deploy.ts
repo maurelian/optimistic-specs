@@ -6,6 +6,7 @@ const deployFn: DeployFunction = async (hre) => {
   const { deploy } = hre.deployments
   const { deployer } = await hre.getNamedAccounts()
 
+  // shouldn't need to deploy this if all functions are internal
   await deploy('WithdrawalVerifier', {
     from: deployer,
     args: [],
